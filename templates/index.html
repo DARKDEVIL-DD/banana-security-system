@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Banana Security System</title>
+
+    <link rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <div class="page">
+
+        <!-- HEADER -->
+        <header class="header">
+
+            <div class="brand">
+                <div class="shield">🛡️</div>
+
+                <div>
+                    <h1>Banana Security System</h1>
+                    <p>AI Powered Anti-Theft Monitoring</p>
+                </div>
+            </div>
+
+            <div class="ai-status-top">
+                🤖
+                <div>
+                    <span>AI STATUS</span>
+                    <strong>READY</strong>
+                </div>
+
+                <div class="online-dot"></div>
+            </div>
+
+        </header>
+
+
+        <!-- MAIN DASHBOARD -->
+        <main class="dashboard">
+
+            <!-- LEFT CAMERA -->
+            <section class="camera-section">
+
+                <div class="camera-header">
+
+                    <div>
+                        📷 <strong>LIVE CAMERA</strong>
+                    </div>
+
+                    <div class="live">
+                        <span></span>
+                        LIVE
+                    </div>
+
+                </div>
+
+
+                <div class="camera-container">
+
+                    <img src="{{ url_for('video_feed') }}"
+                        class="camera-feed">
+
+                </div>
+
+
+                <div class="camera-footer">
+                    🔴 Monitoring for unauthorized banana removal...
+                </div>
+
+            </section>
+
+
+            <!-- RIGHT SIDE -->
+            <section class="cards-section">
+
+
+                <!-- BANANA COUNT -->
+                <div class="info-card banana-card">
+
+                    <div class="icon-circle banana-icon">
+                        🍌
+                    </div>
+
+                    <div class="card-content">
+
+                        <h2>BANANAS DETECTED</h2>
+
+                        <div class="big-number"
+                            id="banana-count">
+                            0
+                        </div>
+
+                        <p>Live count from AI detection</p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- SECURITY -->
+                <div class="info-card security-card">
+
+                    <div class="icon-circle shield-icon">
+                        🛡️
+                    </div>
+
+                    <div class="card-content">
+
+                        <h2>SECURITY STATUS</h2>
+
+                        <div class="security-value"
+                            id="security-status">
+                            SECURE
+                        </div>
+
+                        <p id="security-message">
+                            All bananas are safe!
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- THEFT ALERT -->
+                <div class="info-card alert-card">
+
+                    <div class="icon-circle alert-icon">
+                        🚨
+                    </div>
+
+                    <div class="card-content">
+
+                        <h2>THEFT ALERTS</h2>
+
+                        <div class="alert-number"
+                            id="theft-alerts">
+                            0
+                        </div>
+
+                        <p>Unauthorized removal attempts</p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+
+        <!-- FOOTER -->
+        <footer class="footer">
+
+            <div>
+                🛡️ <strong>Protecting Bananas. Securing Tomorrow. 🍌</strong>
+            </div>
+
+            <div id="clock">
+                SYSTEM ONLINE
+            </div>
+
+        </footer>
+
+    </div>
+
+
+    <!-- JAVASCRIPT -->
+    <script>
+
+        let alarmPlaying = false;
+        let audioContext = null;
+        let alarmInterval = null;
+
+
+        // =========================
+        // ALARM SOUND
+        // =========================
+
+        function startAlarm() {
+
+            if (alarmPlaying) {
+                return;
+            }
+
+            alarmPlaying = true;
+
+            audioContext = new (
+                window.AudioContext ||
+                window.webkitAudioContext
+            )();
+
+            function beep() {
+
+                if (!alarmPlaying) {
+                    return;
+                }
+
+                const oscillator =
+                    audioContext.createOscillator();
+
+                const gain =
+                    audioContext.createGain();
+
+                oscillator.connect(gain);
+                gain.connect(audioContext.destination);
+
+                oscillator.frequency.value = 900;
+                oscillator.type = "square";
+
+                gain.gain.setValueAtTime(
+                    0.15,
+                    audioContext.currentTime
+                );
+
+                oscillator.start();
+
+                oscillator.stop(
+                    audioContext.currentTime + 0.25
+                );
+            }
+
+            beep();
+
+            alarmInterval =
+                setInterval(beep, 500);
+        }
+
+
+        function stopAlarm() {
+
+            alarmPlaying = false;
+
+            if (alarmInterval) {
+
+                clearInterval(alarmInterval);
+
+                alarmInterval = null;
+            }
+        }
+
+
+        // =========================
+        // BANANA COUNT
+        // =========================
+
+        async function updateBananaCount() {
+
+            try {
+
+                const response =
+                    await fetch("/banana_count");
+
+                const data =
+                    await response.json();
+
+                document.getElementById(
+                    "banana-count"
+                ).textContent = data.count;
+
+            }
+
+            catch (error) {
+
+                console.log(
+                    "Could not get banana count"
+                );
+
+            }
+        }
+
+
+        // =========================
+        // SECURITY STATUS
+        // =========================
+
+        async function updateSecurityStatus() {
+
+            try {
+
+                const response =
+                    await fetch("/security_status");
+
+                const data =
+                    await response.json();
+
+
+                document.getElementById(
+                    "security-status"
+                ).textContent = data.status;
+
+
+                document.getElementById(
+                    "theft-alerts"
+                ).textContent = data.alerts;
+
+
+                const message =
+                    document.getElementById(
+                        "security-message"
+                    );
+
+
+                const securityCard =
+                    document.querySelector(
+                        ".security-card"
+                    );
+
+
+                const status =
+                    document.getElementById(
+                        "security-status"
+                    );
+
+
+                // THEFT
+                if (data.status === "THEFT DETECTED") {
+
+                    status.classList.add("danger");
+
+                    securityCard.classList.add(
+                        "danger-card"
+                    );
+
+                    message.textContent =
+                        "⚠️ Unauthorized removal detected!";
+
+                    startAlarm();
+
+                }
+
+
+                // SECURE
+                else {
+
+                    status.classList.remove(
+                        "danger"
+                    );
+
+                    securityCard.classList.remove(
+                        "danger-card"
+                    );
+
+                    message.textContent =
+                        "All bananas are safe!";
+
+                    stopAlarm();
+
+                }
+
+            }
+
+            catch (error) {
+
+                console.log(
+                    "Could not get security status"
+                );
+
+            }
+        }
+
+
+        // =========================
+        // CLOCK
+        // =========================
+
+        function updateClock() {
+
+            const now = new Date();
+
+            const date =
+                now.toLocaleDateString(
+                    "en-IN",
+                    {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric"
+                    }
+                );
+
+            const time =
+                now.toLocaleTimeString(
+                    "en-IN",
+                    {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit"
+                    }
+                );
+
+            document.getElementById(
+                "clock"
+            ).textContent =
+                date + "  |  " + time;
+        }
+
+
+        // =========================
+        // LIVE UPDATES
+        // =========================
+
+        setInterval(
+            updateBananaCount,
+            500
+        );
+
+        setInterval(
+            updateSecurityStatus,
+            500
+        );
+
+        setInterval(
+            updateClock,
+            1000
+        );
+
+
+        updateBananaCount();
+        updateSecurityStatus();
+        updateClock();
+
+    </script>
+
+</body>
+
+</html>
